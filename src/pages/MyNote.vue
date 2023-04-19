@@ -3,27 +3,30 @@
     <LeftLeft
       @editname="editName"
       @deleteItem="deleteItem"
-      :notelist="noteList"
+      :noteList="noteList"
       :currentId="currentId"
       ref="leftMenu"
       @receiveCurrentId="receiveCurrentId"
-      @receiveNewItem="receiveNewItem"
       @searchdata="searchData"
+      @getAll="getNoteList"
+      @initFirstItem="initFirstItem"
     ></LeftLeft>
     <!-- <LeftLeft></LeftLeft> -->
     <MyEditor
       v-if="noteList.length"
+      :currentId="currentId"
       ref="myEditor"
       :text="text"
       @inputFocus="inputFocus"
       :searchKeyword="searchKeyword"
+      @getAll="getNoteList"
       @receiveText="receiveText"
     ></MyEditor>
   </div>
 </template>
 
 <script>
-import axios from "axios";
+import axios from "@/utils/request";
 import LeftLeft from "../components/ProNote/LeftLeft.vue";
 import MyEditor from "../components/ProNote/MyEditor.vue";
 
@@ -45,8 +48,9 @@ export default {
   // 如果localstorage里面有数据，就拿出展示
   created() {
     this.getNoteList();
-    /* if (localStorage.getItem("notelist")) {
-      this.noteList = JSON.parse(localStorage.getItem("notelist")); */
+
+    /* if (localStorage.getItem("noteList")) {
+      this.noteList = JSON.parse(localStorage.getItem("noteList")); */
     // 如果notelist里面有数据，默认进来展示第一条笔记
   },
   methods: {
@@ -62,7 +66,7 @@ export default {
         this.noteList[index].editStatus = false;
       }
       console.log(this.noteList);
-      localStorage.setItem("notelist", JSON.stringify(this.noteList));
+      localStorage.setItem("noteList", JSON.stringify(this.noteList));
     },
     //left删除标题后，传回id，父组件接收到id,删除对应item，然后存储到localstorage
     deleteItem(data) {
@@ -79,7 +83,12 @@ export default {
         this.text = this.noteList[0].text;
       }
 
-      localStorage.setItem("notelist", JSON.stringify(this.noteList));
+      // localStorage.setItem("noteList", JSON.stringify(this.noteList));
+    },
+    // 选择第一个
+    initFirstItem() {
+      this.currentId = this.noteList[0].id;
+      this.text = this.noteList[0].text;
     },
     // 接收当前的id
     receiveCurrentId(data) {
@@ -91,11 +100,11 @@ export default {
       this.text = index >= 0 ? this.noteList[index].text : "";
     },
     //接收新的item
-    receiveNewItem(item) {
-      // console.log("新的item是", item);
-      this.noteList.push(item);
-      // console.log("notelist", this.noteList);
-    },
+    // receiveNewItem(item) {
+    //   // console.log("新的item是", item);
+    //   this.noteList.push(item);
+    //   // console.log("noteList", this.noteList);
+    // },
     // 接收当前保存的text内容
     // 当点击的时候，向父组件传内容数据，根据当前id匹配，存到item里面，
     receiveText(data) {
@@ -108,7 +117,7 @@ export default {
       this.text = data;
       // console.log(this.text);
       console.log(this.noteList, 11111);
-      localStorage.setItem("notelist", JSON.stringify(this.noteList));
+      // localStorage.setItem("noteList", JSON.stringify(this.noteList));
     },
     // 当查找数据时，left组件传来查找的关键字
     searchData(data) {
@@ -119,22 +128,28 @@ export default {
       this.$refs.leftMenu.inputFocus();
     },
 
-    getNoteList() {
-      axios
-        .get("http://localhost/getNoteList")
-        .then((res) => {
-          this.noteList = res.data;
-          if (this.noteList.length) {
-            // this.currentId = { noteList: [], ...this.item[0] };
-            this.currentId = this.noteList[0].id;
-            this.text = this.noteList[0].text;
-          }
-          console.log(res.data);
-          console.log("成功");
-        })
-        .catch((err) => {
-          console.log("获取数据失败" + err);
-        });
+    getNoteList(data) {
+      axios.get("http://localhost/getNoteList").then((res) => {
+        this.noteList = res.data;
+
+        // this.receiveText({ id: this.currentId });
+        // this.text = this.noteList
+        let index = this.noteList.findIndex((v) => v.id === this.currentId);
+        if (index >= 0) {
+          this.text = this.noteList[index].text;
+        } else {
+          this.initFirstItem();
+        }
+        if (data && data.editStatus) {
+          this.noteList[index].editStatus = data.editStatus;
+          this.$nextTick(() => {
+            this.$refs.leftMenu.editInput();
+          });
+        }
+
+        console.log(111, res.data);
+        console.log("成功");
+      });
     },
   },
 };

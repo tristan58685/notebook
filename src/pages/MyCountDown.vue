@@ -76,6 +76,7 @@
  
 
 <script>
+import axios from "@/utils/request";
 import FlipCountdown from "vue2-flip-countdown";
 export default {
   name: "MyCountDown",
@@ -96,7 +97,6 @@ export default {
     // 开启定时器，一秒钟调用一次，防止有空白渲染问题，首先调用一次
     // 如果localstorage里面有数据，就拿出
     this.getCountdownlist();
-
     // let countdownlist = JSON.parse(localStorage.getItem("countdownlist"));
     /* if (
       countdownlist &&
@@ -111,9 +111,9 @@ export default {
       this.hasSetCountDown = false;
       this.showChooseTime = true;
       this.status = true;
-    }
+    } */
     this.getTime();
-    setInterval(this.getTime, 1000); */
+    setInterval(this.getTime, 1000);
   },
   methods: {
     // 重新选择倒计时后，showChooseTime为true,time-picker展示
@@ -132,15 +132,18 @@ export default {
       this.countdownValue = this.timers(
         new Date(new Date().getTime() + hours + minutes + seconds)
       );
-      this.status = false;
-      this.hasSetCountDown = true;
-      this.showChooseTime = false;
+      // this.status = false;
+      // this.hasSetCountDown = true;
+      // this.showChooseTime = false;
       this.value1 = "2023-01-01 00:00:00";
       // 选择倒计时时长之后，就存储到localstorage里面
-      localStorage.setItem(
+      /* localStorage.setItem(
         "countdownlist",
         JSON.stringify(this.countdownValue)
-      );
+      ); */
+      // 选择倒计时长后，更新
+      this.upCountdownlist(this.countdownValue);
+      console.log("upCountlist");
     },
     // 开关状态更改
     statusChange() {
@@ -189,35 +192,45 @@ export default {
       this.hasSetCountDown = false;
       this.showChooseTime = true;
     },
+    // 获取数据
     getCountdownlist() {
-      this.$axios
-        .get("http://localhost/getCountdownlist")
-        .then((res) => {
-          // 这里写获取数据
-          // let countdownlist = JSON.parse(localStorage.getItem("countdownlist"));
-          this.countdownlist = res.data;
-          console.log(res.data);
-          console.log("成功");
-
-          if (
-            countdownlist &&
-            new Date(countdownlist).getTime() > new Date().getTime()
-          ) {
-            this.countdownValue = countdownlist;
-            this.hasSetCountDown = true;
-            this.showChooseTime = false;
-            this.status = false;
-            console.log("localstorage里有数据,赋值为countdownValue");
-          } else {
-            this.hasSetCountDown = false;
-            this.showChooseTime = true;
-            this.status = true;
-          }
-          this.getTime();
-          setInterval(this.getTime, 1000);
+      axios.get("http://localhost/getCountdownlist").then((res) => {
+        // res.data是Array(1),  0: {countdown: '2023-04-19 23:00:00'}
+        let countdownlist = res.data[0].countdown;
+        console.log(res.data);
+        console.log(countdownlist);
+        console.log("成功");
+        if (
+          countdownlist &&
+          new Date(countdownlist).getTime() > new Date().getTime()
+        ) {
+          console.log("yep!");
+          this.countdownValue = countdownlist;
+          this.hasSetCountDown = true;
+          this.showChooseTime = false;
+          this.status = false;
+        } else {
+          this.hasSetCountDown = false;
+          this.showChooseTime = true;
+          this.status = true;
+          console.log(222);
+        }
+      });
+    },
+    // 更新数据
+    upCountdownlist(data) {
+      //修改操作
+      axios
+        .post("http://localhost/upCountdownlist", {
+          params: {
+            countdown: data,
+          },
         })
-        .catch((err) => {
-          console.log("获取数据失败" + err);
+        .then((res) => {
+          // console.log(res.data);
+          console.log("更改成功");
+          this.getCountdownlist();
+          // this.getAll();
         });
     },
   },

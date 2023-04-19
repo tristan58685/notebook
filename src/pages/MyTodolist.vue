@@ -239,6 +239,7 @@ export default {
     },
   }, */
   created() {
+    // 调用getTodoList方法，获取所有数据
     this.getTodoList();
     // 添加提醒的定时器
     this.noticeList.forEach((v) => {

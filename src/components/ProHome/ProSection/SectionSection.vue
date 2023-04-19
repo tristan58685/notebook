@@ -28,7 +28,9 @@
       ></i>
       <div class="header">
         <span class="spanstyle">实用网址：</span>
-        <el-button size="mini" @click="isadd = true"> 添加网址 </el-button>
+        <el-button size="mini" @click="(isadd = true), (justadd = true)">
+          添加网址
+        </el-button>
         <el-dialog title="请输入名称和网址" :visible.sync="isadd" width="30%">
           <!-- :before-close="handleClose" -->
           <!-- <span>这是一段信息</span> -->
@@ -73,9 +75,9 @@
 </template>
 
 <script>
+import axios from "@/utils/request";
 import Calendar from "vue-calendar-component";
 import { nanoid } from "nanoid";
-import axios from "axios";
 export default {
   name: "SectionSection",
   components: {
@@ -94,80 +96,15 @@ export default {
       value: new Date(), //element日历
       // addPlaceholder: "添加网站",
       key: String,
-      httplocations: [
-        {
-          nickname: " 百度",
-          locations: "https://www.baidu.com.cn/",
-          id: "1",
-        },
-        {
-          nickname: "中国研究生招生信息网",
-          locations: "https://yz.chsi.com.cn/",
-          id: "2",
-        },
-        {
-          nickname: "国家政务平台网",
-          locations: "https://www.gov.cn/",
-          id: "3",
-        },
-        {
-          nickname: "bilibili",
-          locations: "https://www.bilibili.com/",
-          id: "4",
-        },
-        {
-          nickname: "百度网盘",
-          locations: "https://pan.baidu.com/",
-          id: "5",
-        },
-        {
-          nickname: "安阳师范学院",
-          locations: "http://www.aynu.edu.cn/",
-          id: "6",
-        },
-        {
-          nickname: "中国大学MOOC",
-          locations: "https://www.icourse163.org/",
-          id: "7",
-        },
-        {
-          nickname: "TED",
-          locations: "https://www.ted.com/",
-          id: "8",
-        },
-        {
-          nickname: "中国知网",
-          locations: "https://www.cnki.net/",
-          id: "9",
-        },
-        {
-          nickname: "GitHub",
-          locations: "https://github.com/",
-          id: "10",
-        },
-        {
-          nickname: "学习通",
-          locations:
-            "http://passport2.chaoxing.com/login?newversion=true&refer=http%3A%2F%2Fpay.chaoxing.com%2Findex.aspx",
-          id: "11",
-        },
-        {
-          nickname: "腾讯邮箱",
-          locations: " https://wx.mail.qq.com/",
-          id: "12",
-        },
-        {
-          nickname: "中国教育考试网",
-          locations: "https://zscx.neea.edu.cn/",
-          id: "13",
-        },
-      ],
+      httplocations: [],
+      id: "",
+      justadd: false, //用来分区添加网址和编辑网址，因为用的是一个确定方法
     };
   },
-  // 如果localstorage里面有数据，就拿出展示
+
   created() {
-    console.log(11111);
-    this.get();
+    // 获取数据
+    this.getHttpList();
     var now = new Date();
     this.date = now.getDate(); //得到日期
     var day = now.getDay(); //得到周几
@@ -181,14 +118,6 @@ export default {
       "星期六"
     );
     this.week = arr_week[day];
-    // localStorage.setItem("httplist", JSON.stringify(this.httplocations));
-    if (localStorage.getItem("httplist")) {
-      localStorage.setItem("httplist", JSON.stringify(this.httplocations));
-      this.httplocations = JSON.parse(localStorage.getItem("httplist"));
-      console.log("localstorage里有数据,httplist拿取");
-    } else {
-      // localStorage.setItem("httplist", JSON.stringify(this.httplocations));
-    }
   },
   methods: {
     clickDay(data) {
@@ -208,30 +137,39 @@ export default {
       let endDate = Date.parse(dateString2);
       return (startDate - endDate) / (1 * 24 * 60 * 60 * 1000);
     },
-    // 添加网站
+    // ⭐⭐这里有个问题就是，add的数据会随机insert位置,不是push或unshift
+    // 新增网址或者编辑网址在确定的时候都会触发addHttpLocation方法
     addHttpLocation() {
-      console.log(this.isadd);
-      /*  console.log(this.input1);
-        console.log(this.input2); */
-      // ⭐校验网址的正则
-      // var reg = /^([hH][tT]{2}[pP]:\/\/|[hH][tT]{2}[pP][sS]:\/\/)(([A-Za-z0-9-~]+)\.)+([A-Za-z0-9-~\/])+$/;
-      let reg = /[http|https]:\/\/.*\.[com|cn|org|net|gov|edu|pub]/;
-      let obj = {
-        id: nanoid(),
-        nickname: this.input1,
-        locations: this.input2, //这个数组用来放小todolist们
-      };
-      if (!reg.test(obj.locations)) {
-        this.$message('"请输入以http://或者 https://开头的正确网址！"');
-        //layer.msg("请输入以http://或者 https://开头的正确网址！",{time:3000});
-        // return false;
+      // 加判断条件，如果this.justadd为true,说明是新增网址add，如果不是就是编辑网址update
+      if (this.justadd) {
+        // console.log(this.isadd);
+        // 校验网址的正则
+        // var reg = /^([hH][tT]{2}[pP]:\/\/|[hH][tT]{2}[pP][sS]:\/\/)(([A-Za-z0-9-~]+)\.)+([A-Za-z0-9-~\/])+$/;
+        let reg = /[http|https]:\/\/.*\.[com|cn|org|net|gov|edu|pub]/;
+        let obj = {
+          id: nanoid(),
+          nickname: this.input1,
+          locations: this.input2, //这个数组用来放小todolist们
+        };
+        if (!reg.test(obj.locations)) {
+          this.$message('"请输入以http://或者 https://开头的正确网址！"');
+          // return false;
+        } else {
+          console.log("调用addHttpList");
+          // console.log(this.httplocations);
+          this.addHttpList(obj);
+          this.input1 = "";
+          this.input2 = "";
+          this.isadd = false;
+          this.justadd = false;
+        }
+        // 如果不是的话，就是edit的确定，编辑网址
       } else {
-        // return true;
-        this.httplocations.unshift(obj); //自己添加的首先展示在上面
-        console.log(this.httplocations);
-        localStorage.setItem("httplist", JSON.stringify(this.httplocations));
-        this.input1 = "";
-        this.input2 = "";
+        // 调用upHttpList
+        console.log("just edit");
+        console.log(this.id, this.input1, this.input2);
+        this.upHttpList();
+        this.getHttpList();
         this.isadd = false;
       }
     },
@@ -240,22 +178,13 @@ export default {
       console.log("删除网址");
       console.log(data);
       console.log(data.id);
-      let index = this.httplocations.findIndex((v) => v.id === data.id);
-      console.log("要删除的网址在list是第" + index + "个");
-      // this.httplocations.splice(index, 1);
       this.$confirm("此操作将永久删除该网址, 是否继续?", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning",
       })
         .then(() => {
-          // let index = this.httplocations.findIndex((v) => v.id === data.id);
-          this.httplocations.splice(index, 1);
-          localStorage.setItem("httplist", JSON.stringify(this.httplocations));
-          this.$message({
-            type: "success",
-            message: "删除成功!",
-          });
+          this.delHttpList(data.id);
         })
         .catch(() => {
           this.$message({
@@ -270,29 +199,73 @@ export default {
       // this.isedit = true;
       this.input1 = data.nickname;
       this.input2 = data.locations;
-      console.log(data);
-      let index = this.httplocations.findIndex((v) => v.id === data.id);
-      this.httplocations.splice(index, 1);
+      this.id = data.id;
+      console.log(this.input1, this.input2, this.id);
     },
-    get() {
+    // 获取数据
+    getHttpList() {
+      axios.get("http://localhost/getHttpList").then((res) => {
+        this.httplocations = res.data;
+        console.log(res.data);
+        console.log("成功");
+      });
+    },
+    // 添加数据
+    addHttpList(data) {
+      //添加操作
       axios
-        .get("http://localhost/getHttpList")
-        .then((res) => {
-          this.httplocations = res.data;
-          console.log(res.data);
-          console.log("成功");
+        .post("http://localhost/addHttpList", {
+          params: {
+            id: data.id,
+            locations: data.locations,
+            nickname: data.nickname,
+          },
         })
-        .catch((err) => {
-          console.log("获取数据失败" + err);
+        .then((res) => {
+          this.$message({
+            type: "success",
+            message: "添加成功!",
+          });
+          // 添加之后再去获取数据
+          this.getHttpList();
         });
     },
-    /*  handleClose(done) {
-      this.$confirm("确认关闭？")
-        .then((_) => {
-          done();
+    // 删除数据
+    delHttpList(data) {
+      //修改操作
+      axios
+        .post("http://localhost/delHttpList", {
+          params: {
+            id: data,
+          },
         })
-        .catch((_) => {});
-    }, */
+        .then((res) => {
+          // console.log(res.data);
+          this.$message({
+            type: "success",
+            message: "删除成功!",
+          });
+          // 删除之后再去获取数据
+          this.getHttpList();
+        });
+    },
+    // 更新数据
+    upHttpList() {
+      axios
+        .post("http://localhost/upHttpList", {
+          params: {
+            id: this.id,
+            locations: this.input2,
+            nickname: this.input1,
+          },
+        })
+        .then((res) => {
+          // console.log(res.data);
+          console.log("更改成功");
+          // 更新之后再去获取数据
+          this.getHttpList();
+        });
+    },
   },
 };
 </script>

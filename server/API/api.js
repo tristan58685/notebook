@@ -2,19 +2,15 @@
 let db = require('../db/index')
 
 //查询库里的哪一个表
-/*  var sql = 'select * from user'
- db.query(sql, (err, data) => {
-     if (err) {
-         return res.send('错误：' + err.message)
-     }
-     res.send(data)
- }) */
 exports.getNotelist = (req, res) => {
     db.query('select * from note_list', (err, data) => {
         if (err) {
             return res.send('错误：' + err.message)
         }
-        res.send(data)
+        res.send({
+            status: 200,
+            data: data
+        })
     })
 
 }
@@ -38,7 +34,10 @@ exports.getCountdownlist = (req, res) => {
         if (err) {
             return res.send('错误：' + err.message)
         }
-        res.send(data)
+        res.send({
+            status: 200,
+            data: data
+        })
     })
 }
 exports.getHttpList = (req, res) => {
@@ -46,6 +45,9 @@ exports.getHttpList = (req, res) => {
         if (err) {
             return res.send('错误：' + err.message)
         }
-        res.send(data)
+        res.send({
+            status: 200,
+            data: data
+        })
     })
 }

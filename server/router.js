@@ -21,21 +21,21 @@ for (let method in seardata) {
 let deldata = require('./API/del')
 // router.get('/delHttpList', deldata.delHttpList)
 for (let method in deldata) {
-    router.get('/' + method, deldata[method])
+    router.post('/' + method, deldata[method])
 }
 
 // ⭐add
 let adddata = require('./API/add')
 // router.get('/list/add', info.add)
 for (let method in adddata) {
-    router.get('/' + method, adddata[method])
+    router.post('/' + method, adddata[method])
 }
 
 // ⭐update
 let updatedata = require('./API/update')
 // router.get('/list/add', info.add)
 for (let method in updatedata) {
-    router.get('/' + method, updatedata[method])
+    router.post('/' + method, updatedata[method])
 }
 
 

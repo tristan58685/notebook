@@ -33,8 +33,8 @@ export default {
   },
 
   created() {
-    localStorage.getItem("notelist") ||
-      localStorage.setItem("notelist", JSON.stringify([]));
+    localStorage.getItem("noteList") ||
+      localStorage.setItem("noteList", JSON.stringify([]));
     localStorage.getItem("musiclist") ||
       localStorage.setItem("musiclist", JSON.stringify([]));
     localStorage.getItem("todolist") ||

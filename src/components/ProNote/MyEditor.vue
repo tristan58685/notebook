@@ -40,27 +40,22 @@
         :mode="mode"
         @onCreated="onCreated1"
       />
-      <el-button
-        class="buttonStyle"
-        @click="preserveText(selfText)"
-        type="primary"
-        plain
-        >保存</el-button
-      >
     </div>
   </div>
 </template>
 
 <script>
 // import Vue from "vue";
+import axios from "@/utils/request";
 import { Editor, Toolbar } from "@wangeditor/editor-for-vue";
+// import axios from "axios";
 export default {
   name: "MyEditor",
   components: { Editor, Toolbar },
 
   data() {
     return {
-      rightList: this.notelist, //数据是从父组件流向子组件
+      rightList: this.noteList, //数据是从父组件流向子组件
       editor: null, //编辑器实例
       // html: "<p>hello</p>", //放到v-model
       toolbarConfig: {}, //工具栏配置
@@ -72,7 +67,7 @@ export default {
       searchText: "", //编辑器实例（用来展示）
     };
   },
-  props: ["text", "searchKeyword"],
+  props: ["text", "searchKeyword", "currentId"],
   methods: {
     onCreated(editor) {
       this.editor = Object.seal(editor); // 一定要用 Object.seal() ，否则会报错
@@ -89,12 +84,35 @@ export default {
       this.editor.focus();
     },
     // 当点击保存，把当前内容传送给父组件
+    // preserveText(data) {
+    //   // this.$emit("receiveText", data);
+    //   this.$message({
+    //     message: "保存成功！",
+    //     type: "success",
+    //   });
+    // },
+    getAll(data) {
+      this.$emit("getAll", data);
+    },
+    // 更新数据
     preserveText(data) {
-      this.$emit("receiveText", data);
-      this.$message({
-        message: "保存成功！",
-        type: "success",
-      });
+      //修改操作
+      axios
+        .post("http://localhost/upNotelist", {
+          params: {
+            id: this.currentId,
+            value: data,
+            type: "text",
+          },
+        })
+        .then((res) => {
+          // console.log(res.data);
+          this.getAll();
+          this.$message({
+            message: "保存成功！",
+            type: "success",
+          });
+        });
     },
     // 让查找到关键字并且添加样式的文本替换原来的文本，切换展示查找数据的编辑器
     replaceText() {

@@ -23,19 +23,8 @@
           currentStyle: item.id === currentId,
           hoverStyle: item.showStatus,
         }"
-        @mouseenter="
-          () => {
-            item.showStatus = true;
-          }
-        "
-        @mouseleave="
-          () => {
-            if (item.dropdowmStatus) {
-              return;
-            }
-            item.showStatus = false;
-          }
-        "
+        @mouseenter="mouseEnterItem(item)"
+        @mouseleave="mouseLeaveItem(item)"
       >
         <el-dropdown
           :tabindex="100"
@@ -62,7 +51,7 @@
           v-show="item.editStatus"
           placeholder="请输入标题"
           :ref="item.id"
-          @keyup.enter="transferData(item)"
+          @keyup.enter="enterItem(item)"
           @blur="transferData(item)"
         />
         <!-- 如果使用组件的话，键盘事件后面要加上.native -->
@@ -72,6 +61,9 @@
 </template>
 <script>
 import { nanoid } from "nanoid";
+import axios from "@/utils/request";
+import { cloneDeep } from "lodash";
+
 export default {
   name: "LeftLeft",
   data() {
@@ -84,9 +76,9 @@ export default {
     };
   },
   // currentId是根据chooseitem选择事件来获取的
-  // props: ["notelist", "currentId"],
+  // props: ["noteList", "currentId"],
   props: {
-    notelist: {
+    noteList: {
       type: Array,
       default: [],
     },
@@ -96,17 +88,21 @@ export default {
     },
   },
   watch: {
-    notelist: {
+    noteList: {
       //深度监听，可监听到对象、数组的变化
       handler(newV, oldV) {
         // do something, 可使用this
-        // console.log("new", newV);
+        console.log("new", newV);
         // console.log("====================");
         // console.log("olld", oldV);
-        this.leftList = newV;
-        // if (this.leftList.length && this.notelist.length) {
+        // console.log(cloneDeep);
+        if (this.input) {
+          return;
+        }
+        this.leftList = cloneDeep(newV);
+        // if (this.leftList.length && this.noteList.length) {
         //   this.leftList.forEach((v) => {
-        //     v = this.notelist.filter((j) => j.id === v.id)[0];
+        //     v = this.noteList.filter((j) => j.id === v.id)[0];
         //   });
         // }
       },
@@ -128,26 +124,50 @@ export default {
       };
       // 现在不push的原因是，leftList是根据watch事件来更新的
       // this.leftList.push(item);
-      this.$emit("receiveNewItem", item);
-      // 当新增的时候，调用chooseitem方法
+      // 调用add方法，把item传过去
       this.chooseItem(item);
-      //页面的操作写到nexttick钩子里面，数据的一般不要写在里面
-      item.editStatus = true;
 
-      this.$nextTick(() => {
-        // 打log看，数据里面只有一个元素，0是为了取数组里的元素
-        // 当 v-for 用于元素或组件的时候，引用信息将是包含 DOM 节点或组件实例的数组。
-        console.log(item);
-        console.log(this.$refs[this.currentId]);
-        this.$refs[this.currentId][0].focus();
-      });
+      this.addNotelist(item);
+      // this.$emit("receiveNewItem", item);
+      // 当新增的时候，调用chooseitem方法
+      // this.chooseItem(item);
+      //页面的操作写到nexttick钩子里面，数据的一般不要写在里面
+      // item.editStatus = true;
+
+      // this.$nextTick(() => {
+      //   // 打log看，数据里面只有一个元素，0是为了取数组里的元素
+      //   // 当 v-for 用于元素或组件的时候，引用信息将是包含 DOM 节点或组件实例的数组。
+      //   console.log(item);
+      //   console.log(this.$refs[this.currentId]);
+      //   this.$refs[this.currentId][0].focus();
+      // });
     },
-    // 点击回车键或blur，输入框editstatus变成false,聚焦消失，把当前item传给父组件
+    //鼠标移入
+    mouseEnterItem(item) {
+      this.$set(item, "showStatus", true);
+    },
+    mouseLeaveItem(item) {
+      if (item.dropdownStatus) {
+        return;
+      }
+      this.$set(item, "showStatus", false);
+    },
+    editInput() {
+      this.$refs[this.currentId][0].focus();
+    },
+    enterItem(item) {
+      this.$refs[item.id][0].blur();
+    },
+    // 点击blur，输入框editstatus变成false,聚焦消失，把当前item传给父组件
     transferData(item) {
       //再加判断，标题不能为空
+      if (!item.name) {
+        this.$message.error("笔记标题不能为空");
+        return;
+      }
       item.editStatus = false;
-      this.$emit("editname", item);
-      this.$refs[item.id][0].blur();
+      this.upNotelist(item);
+      // this.$emit("editname", item);
     },
     // 点击标题，状态是click,把当前item传给父组件
     chooseItem(item) {
@@ -162,8 +182,10 @@ export default {
       console.log(command);
       // 当选择重命名,editStatus为true,输入框聚焦,修改之后enter或blur
       if (command == "rename") {
-        item.editStatus = true;
+        // item.editStatus = true;
+        this.$set(item, "editStatus", true);
         this.$nextTick(() => {
+          console.log(this.$refs[item.id][0]);
           this.$refs[item.id][0].focus();
           // console.log("当前的id是:" + this.idnum);
         });
@@ -175,12 +197,9 @@ export default {
           type: "warning",
         })
           .then(() => {
-            this.$message({
-              type: "success",
-              message: "删除成功!",
-            });
             console.log("当前要删除的id是" + item.id),
-              this.$emit("deleteItem", item.id);
+              this.delNotelist(item.id);
+            // this.$emit("deleteItem", item.id);
           })
           .catch(() => {
             this.$message({
@@ -192,7 +211,7 @@ export default {
     },
     // 下拉框出现/隐藏时触发
     visibleChange(status, item) {
-      item.dropdowmStatus = status;
+      item.dropdownStatus = status;
       if (!status) {
         item.showStatus = false;
       }
@@ -203,7 +222,7 @@ export default {
     },
     // 查找
     SearchData() {
-      console.log("seachdata", this.leftList);
+      // console.log("seachdata", this.leftList);
       this.$emit("searchdata", this.input);
       //遍历查找符合条件的list,返回的是符合结果的leftList集合
       // console.log(this.leftList.filter((v) => v.name.includes(this.input)));
@@ -211,10 +230,10 @@ export default {
       // console.log(newArray);
 
       let newArray = [];
-      let currentFlag = true;
+      let currentFlag = false;
       if (this.input) {
-        this.notelist.map((item) => {
-          currentFlag = false;
+        this.noteList.map((item) => {
+          // currentFlag = false;
           // name和text搜索关键词
           if (
             item.name.includes(this.input) ||
@@ -235,15 +254,70 @@ export default {
           }
         });
         this.leftList = newArray;
+        if (!currentFlag && this.leftList.length) {
+          this.chooseItem(this.leftList[0]);
+        } else if (!this.leftList.length) {
+          this.chooseItem({});
+        }
       } else {
-        this.leftList = this.notelist;
+        this.leftList = this.noteList;
       }
+    },
+    getAll(data) {
+      this.$emit("getAll", data);
+    },
+    // 往数据库里面添加数据
+    addNotelist(data) {
+      //添加操作
+      axios
+        .post("http://localhost/addNotelist", {
+          params: {
+            id: data.id,
+            name: data.name,
+            // editStatus: data.editStatus,
+            text: data.text,
+            // showStatus: data.showStatus,
+          },
+        })
+        .then((res) => {
+          // console.log(res.data);
+          this.getAll({ editStatus: true });
+        });
+    },
+    // 更新数据
+    upNotelist(data) {
+      //修改操作
+      axios
+        .post("http://localhost/upNotelist", {
+          params: {
+            id: data.id,
+            value: data.name,
+            type: "name",
+          },
+        })
+        .then((res) => {
+          // console.log(res.data);
+          this.getAll();
+        });
+    },
+    // 删除数据
+    delNotelist(data) {
+      //修改操作
+      axios
+        .post("http://localhost/delNotelist", {
+          params: {
+            id: data,
+          },
+        })
+        .then((res) => {
+          // console.log(res.data);
+          this.$message({
+            type: "success",
+            message: "删除成功!",
+          });
 
-      if (!currentFlag && this.leftList.length) {
-        this.chooseItem(this.leftList[0]);
-      } else if (!this.leftList.length) {
-        this.chooseItem({});
-      }
+          this.getAll();
+        });
     },
   },
 };
