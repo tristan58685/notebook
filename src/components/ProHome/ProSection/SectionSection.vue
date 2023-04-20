@@ -169,7 +169,7 @@ export default {
         console.log("just edit");
         console.log(this.id, this.input1, this.input2);
         this.upHttpList();
-        this.getHttpList();
+        // this.getHttpList();
         this.isadd = false;
       }
     },
@@ -261,7 +261,11 @@ export default {
         })
         .then((res) => {
           // console.log(res.data);
-          console.log("更改成功");
+          // console.log("更改成功");
+          this.$message({
+            type: "success",
+            message: "更改成功!",
+          });
           // 更新之后再去获取数据
           this.getHttpList();
         });

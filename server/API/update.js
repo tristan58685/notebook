@@ -54,7 +54,7 @@ exports.upCountdownlist = (req, res) => {
         if (err) {
             return res.send('错误：' + err.message)
         }
-        console.log(data);
+        // console.log(data);
         if (data.changedRows > 0) {
             res.send({
                 status: 200,
@@ -75,18 +75,23 @@ exports.upHttpList = (req, res) => {        //通过id更新数据
         if (err) {
             return res.send('错误：' + err.message)
         }
-        if (data.changedRows > 0) {
-            res.send({
-                status: 200,
-                message: 'success'
-            })
-        } else {
-            res.send({
-                status: 202,
-                message: 'error',
-                data: Data
-            })
-        }
+        // console.log(data);
+        res.send({
+            status: 200,
+            message: 'success'
+        })
+        // if (data.changedRows > 0) {
+        //     res.send({
+        //         status: 200,
+        //         message: 'success'
+        //     })
+        // } else {
+        //     res.send({
+        //         status: 202,
+        //         message: 'error',
+        //         data: data
+        //     })
+        // }
     })
 }
 
